@@ -1,0 +1,62 @@
+ docker rm -f neo4j-docker
+
+ docker run \
+                       --name neo4j-docker \
+                       -p7474:7474 -p7687:7687 \
+                       -v /home/pantro/Documentos/GITHUB/rabies-graph-neural-model/neo4j_csv:/var/lib/neo4j/import \
+                       -v neo4j_data:/data \
+                       -e NEO4J_AUTH=neo4j/soloyoynadamas15 \
+                       neo4j:5
+                       
+// --- Crear nodos Cuadra ---
+LOAD CSV WITH HEADERS FROM 'file:///nodes_cuadra.csv' AS row
+CREATE (:Cuadra {
+  cuadra_id: toInteger(row.cuadra_id),
+  name: "cuadra_" + row.cuadra_id,
+  attr0: toFloat(row.attr0),
+  attr1: toFloat(row.attr1),
+  attr2: toFloat(row.attr2),
+  attr3: toFloat(row.attr3),
+  attr4: toFloat(row.attr4),
+  attr5: toFloat(row.attr5),
+  attr6: toFloat(row.attr6),
+  attr7: toFloat(row.attr7)
+});
+
+// --- Crear nodos Health_post ---
+LOAD CSV WITH HEADERS FROM 'file:///nodes_health_post.csv' AS row
+CREATE (:Health_post {
+  health_post_id: toInteger(row.health_post_id),
+  name: "ps_" + row.health_post_id,
+  attr0: toFloat(row.attr0),
+  attr1: toFloat(row.attr1)
+});
+
+// --- Crear nodos Water_channel ---
+LOAD CSV WITH HEADERS FROM 'file:///nodes_water_channel.csv' AS row
+CREATE (:Water_channel {
+  water_channel_id: toInteger(row.water_channel_id),
+  name: "wch_" + row.water_channel_id,
+  attr0: toFloat(row.attr0),
+  attr1: toFloat(row.attr1)
+});
+
+// --- Crear relaciones cerca_de (cuadra -> water_channel) ---
+LOAD CSV WITH HEADERS FROM 'file:///edges_cuadra_cerca_de_water_channel.csv' AS row
+MATCH (c:Cuadra {cuadra_id: toInteger(row.source)}), (w:Water_channel {water_channel_id: toInteger(row.target)})
+CREATE (c)-[:CERCA_DE]->(w);
+
+// --- Crear relaciones reporta_a (cuadra -> health_post) ---
+LOAD CSV WITH HEADERS FROM 'file:///edges_cuadra_reporta_a_health_post.csv' AS row
+MATCH (c:Cuadra {cuadra_id: toInteger(row.source)}), (h:Health_post {health_post_id: toInteger(row.target)})
+CREATE (c)-[:REPORTA_A]->(h);
+
+// --- Crear relaciones vecina_de (cuadra -> cuadra) ---
+LOAD CSV WITH HEADERS FROM 'file:///edges_cuadra_vecina_de_cuadra.csv' AS row
+MATCH (c1:Cuadra {cuadra_id: toInteger(row.source)}), (c2:Cuadra {cuadra_id: toInteger(row.target)})
+CREATE (c1)-[:VECINA_DE]->(c2);
+
+// --- Crear relaciones atiende_a (health_post -> cuadra) ---
+LOAD CSV WITH HEADERS FROM 'file:///edges_health_post_atiende_a_cuadra.csv' AS row
+MATCH (h:Health_post {health_post_id: toInteger(row.source)}), (c:Cuadra {cuadra_id: toInteger(row.target)})
+CREATE (h)-[:ATIENDE_A]->(c);
